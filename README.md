@@ -1,55 +1,27 @@
-# XDUCraft MC Update (`nonebot-plugin-xducraft-mc-update`) 0.1.0
+# XDUCraft MC Update
 
 基于 NoneBot 2 与 OneBot v11 的 Minecraft 官方版本更新监控与群推送插件。
 
-通过 APScheduler 定时轮询 Mojang 官方版本清单（`version_manifest.json`），自动检测正式版（`release`）与快照版（`snapshot`）的最新发布，并向所有已订阅的群推送通知。
+通过 APScheduler 定时轮询 Mojang 官方版本清单，检测正式版与快照版的发布动态，并向所有已订阅的群推送通知。
 
-主部署宿主仓库参见：[FlyingPig278/XDUCraft-bot](https://github.com/FlyingPig278/XDUCraft-bot)。
-
----
-
-## 功能特性
-
-- **官方版本追踪**：定期检查 Mojang 官方版本清单，精准区分正式版与快照版。
-- **差异化公告推送**：一旦检测到新版本，自动提取发布时间并向所有已订阅的群推送更新通知。
-- **双重门禁与后台推送约束**：后台推送任务受双重门禁严格管控。全局总开关（`mc_update`）与群订阅开关默认均为关闭（`OFF`）。正常生效必须满足：
-  1. 在 WebUI 插件页或通过 Core SDK 开启全局总开关 `mc_update`；
-  2. 超管在群内开启订阅（发送 `/MC更新 订阅`，或发送 `/功能 on MC 更新推送`，系统会自动同步本群插件总开关）。
-
----
-
-## 指令列表与权限控制
-
-| 指令 | 别名 | 权限要求 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `/MC更新 订阅` | `/mcup on` | 超级用户 (SUPERUSER) | 为当前群开启 Minecraft 版本更新推送 |
-| `/MC更新 取消订阅` | `/mcup off` | 超级用户 (SUPERUSER) | 取消当前群的更新推送订阅 |
-
-> [!TIP]
-> 亦可使用统一管理命令：`/功能 on MC 更新推送` 或 `/功能 off MC 更新推送`（特性键名 `mc_update`）。
-
----
+运行整套机器人请看 [FlyingPig278/XDUCraft-bot](https://github.com/FlyingPig278/XDUCraft-bot)。
 
 ## 安装与加载
 
-> [!NOTE]  
-> 本软件包尚未发布至公共 PyPI 仓库，请使用 Git 标签安装。
+本软件包未发布至公共 PyPI 仓库，请使用 Git 地址安装。
 
-### 1. 宿主环境安装
+### 1. 安装核心包与插件
 
-在已初始化的 NoneBot 2 部署环境中，先安装 Core 核心包，再安装本插件：
+在现有的 NoneBot 2.4.x 环境中，先安装 Core 核心包，再安装本插件：
 
 ```bash
-# 1. 安装 Core 核心包（需包含 [onebot] 适配器扩展）
 pip install "nonebot-plugin-xducraft-core[onebot] @ git+https://github.com/FlyingPig278/nonebot-plugin-xducraft-core.git@v0.3.0"
-
-# 2. 安装 MC Update 插件
 pip install "nonebot-plugin-xducraft-mc-update @ git+https://github.com/FlyingPig278/nonebot-plugin-xducraft-mc-update.git@v0.1.0"
 ```
 
-### 2. 宿主加载配置
+### 2. 配置插件加载
 
-在 NoneBot 宿主项目的 `pyproject.toml` 中显式同时加载 Core 与本插件：
+在 NoneBot 项目的 pyproject.toml 中向现有 plugins 列表追加以下模块（请保留已有的其他插件和适配器）：
 
 ```toml
 [tool.nonebot]
@@ -59,40 +31,53 @@ plugins = [
 ]
 ```
 
----
+## 启用与首次使用
 
-## 本地开发与测试（贡献者）
+插件安装后，全局总开关与各群的订阅状态默认处于关闭状态。
 
-克隆本仓库到本地后，在仓库根目录执行：
+### 1. 开启插件
+
+方式一：使用 Web 管理面板
+
+如果配置了 [nonebot-plugin-xducraft-admin](https://github.com/FlyingPig278/nonebot-plugin-xducraft-admin)，访问管理面板（默认地址 http://127.0.0.1:8765）：
+1. 在“插件”页面开启“MC 版本订阅”全局开关。
+2. 在“群聊”页面选择对应群，开启本群的“MC 版本订阅”插件开关。
+
+方式二：不使用 Web 管理面板
+
+如果不运行管理面板，请参考 Core 文档中的[不使用网页时启用插件](https://github.com/FlyingPig278/nonebot-plugin-xducraft-core#不使用网页时启用插件)。通过一次性脚本调用 Core 配置接口，同时开启全局开关与目标群的插件开关。由于 Core 会在前置检查中拦截未在群中启用的插件消息，必须在 Core 中同时配置全局与群开关。
+
+### 2. 群内订阅指令与权限控制
+
+群内订阅指令仅限超级用户（SUPERUSER）执行。开启全局与本群开关后，超级用户可在群内发送以下指令管理订阅：
+
+| 指令 | 别名 | 权限要求 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `/MC更新 订阅` | `/mcup on` | 超级用户 | 开启本群 Minecraft 版本更新推送订阅 |
+| `/MC更新 取消订阅` | `/mcup off` | 超级用户 | 取消本群 Minecraft 版本更新推送订阅 |
+
+若安装了 [nonebot-plugin-xducraft-features](https://github.com/FlyingPig278/nonebot-plugin-xducraft-features) 插件，超级用户亦可在群内发送 `/功能 on MC 更新推送`（或 off）管理订阅。由于本插件仅提供一项功能，修改该功能状态会自动同步群内插件总开关。
+
+订阅成功后，当 Mojang 官方发布新版本时，机器人将自动向已订阅群发送版本更新公告。
+
+## 业务数据存储
+
+- 群订阅列表与版本检查游标保存在 `<DATA_DIR>/plugins/mc_update/subscription.json` 文件中。该文件属于业务数据，由插件代码自行维护，不写入 Core 配置数据库。
+- 如需自定义数据存放目录，请在启动 Python 进程前配置操作系统环境变量 `XDUCRAFT_DATA_DIR` 为绝对路径。
+
+## 本地开发与测试
+
+克隆本仓库后，可以在本地虚拟环境中安装开发依赖并运行测试：
 
 ```bash
-# 安装 Core 依赖与本地开发依赖
 pip install "nonebot-plugin-xducraft-core[onebot] @ git+https://github.com/FlyingPig278/nonebot-plugin-xducraft-core.git@v0.3.0"
 pip install -e ".[dev]"
-
-# 运行自动化测试
 pytest
-
-# 本地构建 wheel 发行包
 python -m build
 ```
 
-本地构建产物将输出至 `dist/` 目录。
-
----
-
-## 业务数据存储边界
-
-- **业务持久化状态边界**：
-  - 插件业务数据持久化于 `<DATA_DIR>/plugins/mc_update/subscription.json`。
-  - `subscription.json` 混合存储了群订阅列表与版本检查游标（`versions`），属于活跃业务领域状态，**未迁移至 Core 配置数据库**。
-  - 本插件不对 Core 注册配置文档导入，版本游标由业务代码自行读写，不开放网页配置编辑。
-- **数据目录环境变量**：若需要自定义外部数据目录，必须在启动前通过操作系统环境变量配置 `XDUCRAFT_DATA_DIR`（绝对路径），切勿仅写在 live `.env` 中。
-
----
-
 ## 许可证说明
 
-本项目自身源码采用 [MIT License](LICENSE) 授权开源。
+本项目源码采用 MIT 许可证开源，详见 [LICENSE](LICENSE)。
 
-Mojang 与 Minecraft 商标与版本数据版权归 Mojang AB / Microsoft 所有。
+Mojang 与 Minecraft 商标及版本数据版权归 Mojang AB / Microsoft 所有。
